@@ -1,7 +1,4 @@
 lyr_map_1.setStyle(function(feature, resolution) {
-
-    console.log(feature.getProperties());
-    
     return new ol.style.Style({
         fill: new ol.style.Fill({
             color: 'rgba(255,0,0,0.3)'
