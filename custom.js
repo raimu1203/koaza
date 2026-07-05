@@ -1,13 +1,38 @@
-lyr_map_1.setStyle(function(feature, resolution) {
-    var color = feature.get('color'); // 属性に色がある場合
+var originalStyle = lyr_map_1.getStyle();
 
-    return new ol.style.Style({
-        fill: new ol.style.Fill({
-            color: 'rgba(255,0,0,0.3)'  // ←ここを動的にしてもOK
-        }),
-        stroke: new ol.style.Stroke({
-            color: 'rgba(255,0,0,1.0)',
-            width: 1
-        })
-    });
+lyr_map_1.setStyle(function(feature, resolution) {
+
+    var styles;
+
+    if (typeof originalStyle === "function") {
+        styles = originalStyle(feature, resolution);
+    } else {
+        styles = originalStyle;
+    }
+
+    if (!styles) return styles;
+
+    // 配列対応
+    if (Array.isArray(styles)) {
+        styles.forEach(function(s) {
+            if (s.getFill()) {
+                var color = s.getFill().getColor();
+
+                // rgbaに変換して透明度だけ変更
+                if (typeof color === 'string' && color.startsWith('rgba')) {
+                    s.getFill().setColor(color.replace(/[\d\.]+\)$/,'0.3)'));
+                }
+            }
+        });
+    } else {
+        if (styles.getFill && styles.getFill()) {
+            var color = styles.getFill().getColor();
+
+            if (typeof color === 'string' && color.startsWith('rgba')) {
+                styles.getFill().setColor(color.replace(/[\d\.]+\)$/,'0.3)'));
+            }
+        }
+    }
+
+    return styles;
 });
