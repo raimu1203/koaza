@@ -4,15 +4,38 @@ var map = new ol.Map({
     renderer: 'canvas',
     layers: layersList,
     view: new ol.View({
-         maxZoom: 28, minZoom: 1
+         maxZoom: 20, minZoom: 5
     })
 });
 
 //initial view - epsg:3857 coordinates if not "Match project CRS"
-map.getView().fit([15681199.895228, 4612084.058348, 15687912.062791, 4615790.570514], map.getSize());
+map.getView().fit([15683855.163872, 4612251.121002, 15688330.112510, 4614722.691622], map.getSize());
 
 //full zooms only
 map.getView().setProperties({constrainResolution: true});
+
+//change cursor
+function pointerOnFeature(evt) {
+    if (evt.dragging) {
+        return;
+    }
+    var hasFeature = map.hasFeatureAtPixel(evt.pixel, {
+        layerFilter: function(layer) {
+            return layer && (layer.get("interactive"));
+        }
+    });
+    map.getViewport().style.cursor = hasFeature ? "pointer" : "";
+}
+map.on('pointermove', pointerOnFeature);
+function styleCursorMove() {
+    map.on('pointerdrag', function() {
+        map.getViewport().style.cursor = "move";
+    });
+    map.on('pointerup', function() {
+        map.getViewport().style.cursor = "default";
+    });
+}
+styleCursorMove();
 
 ////small screen definition
     var hasTouchScreen = map.getViewport().classList.contains('ol-touch');
@@ -268,7 +291,7 @@ function onPointerMove(evt) {
                     highlightStyle = new ol.style.Style({
                         image: new ol.style.Circle({
                             fill: new ol.style.Fill({
-                                color: "#ffff00"
+                                color: "rgba(255, 255, 0, 1.00)"
                             }),
                             radius: radius
                         })
@@ -279,7 +302,7 @@ function onPointerMove(evt) {
 
                     highlightStyle = new ol.style.Style({
                         stroke: new ol.style.Stroke({
-                            color: '#ffff00',
+                            color: 'rgba(255, 255, 0, 1.00)',
                             lineDash: null,
                             width: featureWidth
                         })
@@ -288,7 +311,7 @@ function onPointerMove(evt) {
                 } else {
                     highlightStyle = new ol.style.Style({
                         fill: new ol.style.Fill({
-                            color: '#ffff00'
+                            color: 'rgba(255, 255, 0, 1.00)'
                         })
                     })
                 }
@@ -466,6 +489,7 @@ map.on('singleclick', onSingleClickWMS);
 //get container
 var topLeftContainerDiv = document.getElementById('top-left-container')
 var bottomLeftContainerDiv = document.getElementById('bottom-left-container')
+var topRightContainerDiv = document.getElementById('top-right-container')
 var bottomRightContainerDiv = document.getElementById('bottom-right-container')
 
 //title
@@ -507,16 +531,19 @@ var bottomAttribution = new ol.control.Attribution({
 });
 map.addControl(bottomAttribution);
 
-var attributionList = document.createElement('li');
-attributionList.innerHTML = `
-	<a href="https://github.com/qgis2web/qgis2web">qgis2web</a> &middot;
-	<a href="https://openlayers.org/">OpenLayers</a> &middot;
-	<a href="https://qgis.org/">QGIS</a>	
-`;
-var bottomAttributionUl = bottomAttribution.element.querySelector('ul');
-if (bottomAttributionUl) {
-  bottomAttribution.element.insertBefore(attributionList, bottomAttributionUl);
-}
+map.once('rendercomplete', function() {
+  var bottomAttributionUl = bottomAttribution.element.querySelector('ul');
+  if (bottomAttributionUl) {
+    var layerAttrs = Array.from(bottomAttributionUl.querySelectorAll('li'))
+      .map(function(li) { return li.innerHTML.trim(); }).filter(Boolean);
+    var attribHtml = `
+    <a href="https://github.com/qgis2web/qgis2web">qgis2web</a> &middot;
+    <a href="https://openlayers.org/">OpenLayers</a> &middot;
+    <a href="https://qgis.org/">QGIS</a>`;
+    if (layerAttrs.length > 0) { attribHtml += ' &nbsp;|&nbsp; ' + layerAttrs.join(', '); }
+    bottomAttributionUl.innerHTML = '<li>' + attribHtml + '</li>';
+  }
+});
 
 
 // Disable "popup on hover" or "highlight on hover" if ol-control mouseover
