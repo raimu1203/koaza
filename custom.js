@@ -1,12 +1,11 @@
 window.addEventListener('DOMContentLoaded', () => {
-    // 💡 設定：ラベルを表示させたい最低のズームレベル（これより拡大すると表示）
-    // 地図の初期表示に合わせて 14 や 16 などに調整してください
-    const MIN_ZOOM_FOR_LABEL = 13; 
+    // 💡 設定：ラベルを表示させたい最低のズームレベル
+    const MIN_ZOOM_FOR_LABEL = 12; 
 
     setTimeout(() => {
         if (typeof map === 'undefined') return;
 
-        // すべての自前レイヤーに対してスタイルを設定
+        // 【機能1】塗りつぶし（Fill）だけを50%透明にする（一回だけ実行）
         map.getLayers().forEach((layer) => {
             if (layer instanceof ol.layer.Tile) return;
 
@@ -15,19 +14,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (!originalStyle) return;
 
                 layer.setStyle(function(feature, resolution) {
-                    let styles = (typeof originalStyle === 'function') 
-                        ? originalStyle(feature, resolution) 
-                        : originalStyle;
-
+                    let styles = (typeof originalStyle === 'function') ? originalStyle(feature, resolution) : originalStyle;
                     if (!styles) return styles;
 
                     const styleArray = Array.isArray(styles) ? styles : [styles];
-                    
-                    // 💡 現在の正確なズームレベルを取得
-                    const currentZoom = map.getView().getZoom();
-
                     styleArray.forEach((style) => {
-                        // 1. 【透明度】塗りつぶし（Fill）だけを50%透明にする
                         const fill = style.getFill();
                         if (fill) {
                             let color = fill.getColor();
@@ -43,47 +34,40 @@ window.addEventListener('DOMContentLoaded', () => {
                                 fill.setColor(newColor);
                             }
                         }
-
-                        // 2. 【ラベル制御】初回の読み込み時に、元のテキスト設定を安全に記憶（バックアップ）
-                        if (style.getText() && !style._originalTextObject) {
-                            style._originalTextObject = style.getText();
-                        }
-
-                        // バックアップがある場合のみ、ズームに応じてテキスト自体を切り替える
-                        if (style._originalTextObject) {
-                            if (currentZoom >= MIN_ZOOM_FOR_LABEL) {
-                                // 指定したズーム以上（拡大）ならラベルを表示
-                                style.setText(style._originalTextObject);
-                            } else {
-                                // 指定したズーム未満（縮小）ならラベルを完全に消去
-                                style.setText(null);
-                            }
-                        }
                     });
-
                     return styles;
                 });
             }
         });
 
-        // 💡 【重要】無限ループを完全に防ぎつつ、ラベルを切り替えるイベント
-        // 拡大縮小の「最中」ではなく、「終わった瞬間（moveend）」にだけ、
-        // 1回だけパチッと地図を描き直させてラベルの表示・非表示を確定させます。
-        map.getView().on('moveend', () => {
+        // 💡 【機能2】ラベルの表示・非表示を切り替える安全な関数
+        function updateLabelVisibility() {
+            const currentZoom = map.getView().getZoom();
+            
             map.getLayers().forEach((layer) => {
-                if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
-                    layer.changed(); // これで上のsetStyleが1回だけ再実行されます
+                if (layer instanceof ol.layer.Tile) return;
+
+                // レイヤー自体の「最大・最小の表示解像度（Min/Max Resolution）」をハックする
+                // これにより、OpenLayersの標準機能として安全に表示・非表示を切り替えます
+                if (typeof layer.setMinResolution === 'function') {
+                    if (currentZoom >= MIN_ZOOM_FOR_LABEL) {
+                        // 拡大時は制限なし（ラベルを表示）
+                        layer.setMinResolution(0);
+                    } else {
+                        // 縮小時は、このレイヤー自体の描画を一時的に見えなくする
+                        // （※もしポリゴン自体も消えてしまう場合は、別の対策をします）
+                        layer.setMinResolution(0.0001); 
+                    }
                 }
             });
-        });
+        }
 
-        // 初回読み込み時にも一度だけ描き直してラベルの状態を正しくする
-        map.getLayers().forEach((layer) => {
-            if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
-                layer.changed();
-            }
-        });
+        // 地図の拡大縮小の「アニメーションが終わった瞬間」にだけ実行する（無限ループが起きない）
+        map.getView().on('moveend', updateLabelVisibility);
+        
+        // 初回読み込み時にも一度実行
+        updateLabelVisibility();
 
-        console.log("無限ループを回避し、ズーム連動ラベル制御を完全に適用しました。");
+        console.log("無限ループを回避した安全なズーム制御を適用しました。");
     }, 600);
 });
