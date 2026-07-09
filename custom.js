@@ -1,10 +1,11 @@
 window.addEventListener('DOMContentLoaded', () => {
     // 💡 設定：ラベルを強制出現させたい最低のズームレベル（これより拡大するとすべて表示）
-    const MIN_ZOOM_FOR_LABEL = 14; 
+    const MIN_ZOOM_FOR_LABEL = 12; 
 
     setTimeout(() => {
         if (typeof map === 'undefined') return;
 
+        // すべての自前レイヤーに対してスタイルを設定
         map.getLayers().forEach((layer) => {
             if (layer instanceof ol.layer.Tile) return;
 
@@ -12,7 +13,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 const originalStyle = layer.getStyle();
                 if (!originalStyle) return;
 
-                // 💡 地図を描画する関数を安全にラップ
                 layer.setStyle(function(feature, resolution) {
                     let styles = (typeof originalStyle === 'function') 
                         ? originalStyle(feature, resolution) 
@@ -23,15 +23,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     const styleArray = Array.isArray(styles) ? styles : [styles];
                     const currentZoom = map.getView().getZoom();
 
-                    // 💡 【超重要】元の設定を汚さないよう、すべて「コピー（clone）」して処理する
-                    const newStyles = styleArray.map((style) => {
-                        if (!style) return style;
-                        
-                        // スタイル全体を安全にコピー
-                        const clonedStyle = style.clone();
-
-                        // 1. 【透明度】塗りつぶし（Fill）の50%透明化処理
-                        const fill = clonedStyle.getFill();
+                    styleArray.forEach((style) => {
+                        // 1. 【透明度】塗りつぶし（Fill）だけを50%透明にする処理（維持）
+                        const fill = style.getFill();
                         if (fill) {
                             let color = fill.getColor();
                             if (color && typeof color === 'string') {
@@ -47,32 +41,34 @@ window.addEventListener('DOMContentLoaded', () => {
                             }
                         }
 
-                        // 2. 【ラベル強制出現＆ズーム制御】
-                        const textStyle = clonedStyle.getText();
+                        // 2. 【ラベル制御】
+                        const textStyle = style.getText();
                         if (textStyle) {
-                            // 文字の設定も安全にコピー
-                            const clonedText = textStyle.clone();
-
-                            // 表示優先度を最高（無限大）にし、はみ出しを許可して強制出現させる
-                            if (typeof clonedText.setPriority === 'function') {
-                                clonedText.setPriority(Infinity);
+                            // 💡 決定打：このラベルの表示優先度を「無限大」にする
+                            // これにより、他のラベルと重なっても間引かれずに強制出現します
+                            if (typeof textStyle.setPriority === 'function') {
+                                textStyle.setPriority(Infinity); 
                             }
-                            if (typeof clonedText.setOverflow === 'function') {
-                                clonedText.setOverflow(true);
+                            // はみ出す文字も許可
+                            if (typeof textStyle.setOverflow === 'function') {
+                                textStyle.setOverflow(true);
                             }
 
-                            // ズームレベルに応じて、コピーした文字をセットするか、空にするか切り替える
+                            // 元のテキスト設定を安全に記憶（バックアップ）
+                            if (!style._originalTextObject) {
+                                style._originalTextObject = textStyle;
+                            }
+
+                            // ズームレベルに応じて「出現」か「消滅」かを切り替える
                             if (currentZoom >= MIN_ZOOM_FOR_LABEL) {
-                                clonedStyle.setText(clonedText); // 強制出現
+                                style.setText(style._originalTextObject);
                             } else {
-                                clonedStyle.setText(null); // 完全に非表示
+                                style.setText(null);
                             }
                         }
-
-                        return clonedStyle;
                     });
 
-                    return newStyles; // 安全に作られたコピーの見た目を地図に返す
+                    return styles;
                 });
             }
         });
@@ -86,13 +82,13 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // 初回起動時にも確実に適用
+        // 初回起動時にも一度だけ描き直してラベルの状態を正しくする
         map.getLayers().forEach((layer) => {
             if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
                 layer.changed();
             }
         });
 
-        console.log("無限ループの原因を根本排除したクローンモードを適用しました。");
+        console.log("安全な優先度ハックにより、カスタムファイルのみで強制出現モードを適用しました。");
     }, 600);
 });
