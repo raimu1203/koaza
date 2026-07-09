@@ -1,54 +1,75 @@
 window.addEventListener('DOMContentLoaded', () => {
-    // 地図が完全に出来上がるのを少し待つ（0.6秒）
+    // 💡 設定：ラベルを表示させたい最低のズームレベル（これより拡大すると表示）
+    // QGISの地図の細かさに合わせて 「14」や「16」などに自由に調整してください
+    const MIN_ZOOM_FOR_LABEL = 15; 
+
     setTimeout(() => {
         if (typeof map === 'undefined') return;
 
-        // 地図上のすべてのレイヤーをループ処理
         map.getLayers().forEach((layer) => {
-            // 背景地図（Tileレイヤー）は処理をスキップ
             if (layer instanceof ol.layer.Tile) return;
 
-            // ベクターレイヤー（自前データ）の場合のみ処理
             if (typeof layer.getStyle === 'function') {
                 const originalStyle = layer.getStyle();
                 if (!originalStyle) return;
 
-                // スタイルを再定義する関数（スタイル関数）を設定
                 layer.setStyle(function(feature, resolution) {
-                    // QGIS側が設定した元のスタイルを呼び出す
-                    // 元のスタイルが関数の場合と配列の場合の両方に対応
                     let styles = (typeof originalStyle === 'function') 
                         ? originalStyle(feature, resolution) 
                         : originalStyle;
 
                     if (!styles) return styles;
 
-                    // 処理しやすいように配列に統一する
                     const styleArray = Array.isArray(styles) ? styles : [styles];
+                    
+                    // 💡 現在の地図のズームレベルを取得する
+                    const currentZoom = map.getView().getZoom();
 
                     styleArray.forEach((style) => {
-                        // 1. 塗りつぶし（Fill）だけを狙い撃ちして50%透明にする
+                        // 【既存の機能】塗りつぶし（Fill）だけを50%透明にする
                         const fill = style.getFill();
                         if (fill) {
                             let color = fill.getColor();
                             if (color && typeof color === 'string') {
-                                // もし '#ff0000' のようなカラーコードなら、ol.color.asArray を使って安全にRGBAに変換
                                 if (typeof ol !== 'undefined' && ol.color && ol.color.asArray) {
                                     let rgba = ol.color.asArray(color).slice();
-                                    rgba[3] = 0.5; // 透明度を0.5にする
+                                    rgba[3] = 0.5;
                                     fill.setColor(rgba);
                                 }
                             } else if (Array.isArray(color)) {
-                                // すでに配列 [R, G, B, A] の場合は、4番目のA（透明度）を0.5にする
                                 let newColor = [...color];
                                 newColor[3] = 0.5;
                                 fill.setColor(newColor);
                             }
                         }
 
-                        // 💡 ここがポイント：
-                        // style.getStroke() や style.getText() には一切触れないため、
-                        // 境界線の太さ・色、ラベルの文字は100%（元の濃さ）のまま完全に維持されます。
+                        // 💡 【新しい機能】ズームレベルに応じてラベル（Text）を制御する
+                        const textStyle = style.getText();
+                        if (textStyle) {
+                            if (currentZoom >= MIN_ZOOM_FOR_LABEL) {
+                                // 設定したズームレベル以上（拡大）なら、文字色を「元の色」に戻して表示
+                                // （元の色が取得できない場合は安全のため黒 [#000000] にします）
+                                if (textStyle._originalFillColor) {
+                                    textStyle.getFill().setColor(textStyle._originalFillColor);
+                                }
+                                if (textStyle._originalStrokeColor && textStyle.getStroke()) {
+                                    textStyle.getStroke().setColor(textStyle._originalStrokeColor);
+                                }
+                            } else {
+                                // 設定したズームレベル未満（縮小）なら、文字と輪郭の色を「完全に透明」にして隠す
+                                // 隠す前に、元の色を記憶しておく（バックアップ）
+                                if (textStyle.getFill() && !textStyle._originalFillColor) {
+                                    textStyle._originalFillColor = textStyle.getFill().getColor();
+                                }
+                                if (textStyle.getStroke() && !textStyle._originalStrokeColor) {
+                                    textStyle._originalStrokeColor = textStyle.getStroke().getColor();
+                                }
+
+                                // 完全に透明（RGBAの最後を0）にする
+                                if (textStyle.getFill()) textStyle.getFill().setColor([0, 0, 0, 0]);
+                                if (textStyle.getStroke()) textStyle.getStroke().setColor([0, 0, 0, 0]);
+                            }
+                        }
                     });
 
                     return styles;
@@ -56,6 +77,16 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        console.log("境界線とラベルを維持し、塗りつぶしのみを半透明にしました。");
+        // 💡 画面を拡大縮小（ズーム変更）した時にも、リアルタイムに表示を切り替える設定
+        map.getView().on('change:resolution', () => {
+            // 地図を描き直させることで、上のsetStyleの中身を再実行させる
+            map.getLayers().forEach((layer) => {
+                if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
+                    layer.changed();
+                }
+            });
+        });
+
+        console.log("塗りつぶし透明化と、ズーム連動ラベル制御を適応しました。");
     }, 600);
 });
