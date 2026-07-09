@@ -1,8 +1,9 @@
 // 💡 設定1：ラベルを強制出現させたい最低のズームレベル（12）
 const MIN_ZOOM_FOR_LABEL = 12; 
 
-// 💡 設定2：文字の大きさの倍率（0.5）
-const LABEL_SCALE_RATIO = 0.1;
+// 💡 設定2：文字の大きさの倍率（小さすぎたため、一度「0.8」にしています）
+// 今後は、この数値を「0.6」や「1.0」などに変えると、その通りに大きさが変化します！
+const LABEL_SCALE_RATIO = 0.8;
 
 // 地図が完全に出来上がってから1回だけ安全に実行するためのフラグ
 let isCustomStyleApplied = false;
@@ -50,7 +51,8 @@ function applyCustomMapSettings() {
                     // 2. 【ラベル制御】
                     const textStyle = style.getText();
                     if (textStyle) {
-                        // 文字の大きさ（倍率）を0.5に指定
+                        // 💡 【修正点】記憶（バックアップ）の有無に関わらず、
+                        // 常に最新の設定（倍率・位置）を上書きして適用するように変更しました
                         if (typeof textStyle.setScale === 'function') {
                             textStyle.setScale(LABEL_SCALE_RATIO);
                         }
@@ -60,8 +62,7 @@ function applyCustomMapSettings() {
                             textStyle.setTextAlign('center');
                         }
 
-                        // 💡 【ここを追加】右寄りの原因である「ズレ（オフセット）」を完全に0にする
-                        // X方向（横）もY方向（縦）もズレをゼロにすることで、文字のど真ん中がポリゴンの中心に重なります
+                        // 右寄りの原因である「ズれ（オフセット）」を完全に0にする
                         if (typeof textStyle.setOffsetX === 'function') {
                             textStyle.setOffsetX(0);
                         }
@@ -69,7 +70,7 @@ function applyCustomMapSettings() {
                             textStyle.setOffsetY(0);
                         }
                         
-                        // 💡 【念のため追加】縦方向の基準位置も「真ん中（middle）」に揃える
+                        // 縦方向の基準位置も「真ん中」に揃える
                         if (typeof textStyle.setTextBaseline === 'function') {
                             textStyle.setTextBaseline('middle');
                         }
@@ -119,7 +120,7 @@ function applyCustomMapSettings() {
     });
 
     isCustomStyleApplied = true;
-    console.log("配置のズレ（オフセット）をリセットし、完全中央揃えを適用しました。");
+    console.log("文字サイズ変更の追従化と完全中央揃えを適用しました。");
 }
 
 // 地図が「最初の描画」を終えた瞬間に実行
