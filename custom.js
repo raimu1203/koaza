@@ -1,6 +1,10 @@
 window.addEventListener('DOMContentLoaded', () => {
-    // 💡 設定：ラベルを強制出現させたい最低のズームレベル（これより拡大するとすべて表示）
+    // 💡 設定1：ラベルを強制出現させたい最低のズームレベル
+    // 今後はズームレベルが「12」以上（12, 13, 14…）に拡大した瞬間に一斉出現します！
     const MIN_ZOOM_FOR_LABEL = 12; 
+
+    // 💡 設定2：ラベルの文字の大きさ（少し小さめの10px）
+    const LABEL_FONT_SIZE = "10px sans-serif";
 
     setTimeout(() => {
         if (typeof map === 'undefined') return;
@@ -24,7 +28,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     const currentZoom = map.getView().getZoom();
 
                     styleArray.forEach((style) => {
-                        // 1. 【透明度】塗りつぶし（Fill）だけを50%透明にする処理（維持）
+                        // 1. 【透明度】塗りつぶし（Fill）の50%透明化処理（維持）
                         const fill = style.getFill();
                         if (fill) {
                             let color = fill.getColor();
@@ -44,8 +48,12 @@ window.addEventListener('DOMContentLoaded', () => {
                         // 2. 【ラベル制御】
                         const textStyle = style.getText();
                         if (textStyle) {
-                            // 💡 決定打：このラベルの表示優先度を「無限大」にする
-                            // これにより、他のラベルと重なっても間引かれずに強制出現します
+                            // 文字の大きさを強制指定
+                            if (typeof textStyle.setFont === 'function') {
+                                textStyle.setFont(LABEL_FONT_SIZE);
+                            }
+
+                            // 表示優先度を最高（無限大）にして強制出現
                             if (typeof textStyle.setPriority === 'function') {
                                 textStyle.setPriority(Infinity); 
                             }
@@ -89,6 +97,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        console.log("安全な優先度ハックにより、カスタムファイルのみで強制出現モードを適用しました。");
+        console.log("ズーム境界を12に変更し、優先度ハックとサイズ変更を適用しました。");
     }, 600);
 });
