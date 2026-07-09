@@ -4,7 +4,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const MIN_ZOOM_FOR_LABEL = 12; 
 
     // 💡 設定2：ラベルの文字の大きさ（少し小さめの10px）
-    const LABEL_FONT_SIZE = "10px sans-serif";
+    const LABEL_FONT_SIZE = "5px sans-serif";
 
     setTimeout(() => {
         if (typeof map === 'undefined') return;
