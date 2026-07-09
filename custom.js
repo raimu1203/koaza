@@ -1,9 +1,8 @@
 // 💡 設定1：ラベルを強制出現させたい最低のズームレベル（12）
 const MIN_ZOOM_FOR_LABEL = 12; 
 
-// 💡 設定2：文字の大きさの倍率（小さめの「0.8」倍に設定しています）
-// もし「もっと小さく」なら 0.7、逆に「もう少し大きく」なら 0.9 にしてください
-const LABEL_SCALE_RATIO = 0.8;
+// 💡 設定2：文字の大きさの倍率（ご指定の「0.5」倍に設定しました！）
+const LABEL_SCALE_RATIO = 0.5;
 
 // 地図が完全に出来上がってから1回だけ安全に実行するためのフラグ
 let isCustomStyleApplied = false;
@@ -51,10 +50,15 @@ function applyCustomMapSettings() {
                     // 2. 【ラベル制御】
                     const textStyle = style.getText();
                     if (textStyle) {
-                        // 💡 【ここが解決策】文字の設定に直接倍率（スケール）を掛け算する
-                        // これにより、フチ取りも含めて文字全体が指定の倍率にキュッと縮小されます
+                        // 文字の大きさ（倍率）を0.5に指定
                         if (typeof textStyle.setScale === 'function') {
                             textStyle.setScale(LABEL_SCALE_RATIO);
+                        }
+
+                        // 💡 【ここを追加】文字の配置を「中央揃え」に強制上書きする
+                        // これにより、右側に偏っていたラベルがポリゴンの重心の中心にバシッと揃います
+                        if (typeof textStyle.setTextAlign === 'function') {
+                            textStyle.setTextAlign('center');
                         }
 
                         // 表示優先度を最高（無限大）にする
@@ -102,7 +106,7 @@ function applyCustomMapSettings() {
     });
 
     isCustomStyleApplied = true;
-    console.log("文字の縮小倍率と強制出現を安全に適用しました。");
+    console.log("文字サイズ0.5倍と中央揃えを安全に適用しました。");
 }
 
 // 地図が「最初の描画（rendercomplete）」を終えた瞬間を狙い撃ちして実行する
