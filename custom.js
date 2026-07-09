@@ -1,7 +1,11 @@
-// 💡 設定：ラベルを強制出現させたい最低のズームレベル（12）
+// 💡 設定1：ラベルを強制出現させたい最低のズームレベル（12）
 const MIN_ZOOM_FOR_LABEL = 12; 
 
-// 🌟 【最重要】地図が完全に出来上がってから1回だけ安全に実行するためのフラグ
+// 💡 設定2：文字の大きさの倍率（小さめの「0.8」倍に設定しています）
+// もし「もっと小さく」なら 0.7、逆に「もう少し大きく」なら 0.9 にしてください
+const LABEL_SCALE_RATIO = 0.8;
+
+// 地図が完全に出来上がってから1回だけ安全に実行するためのフラグ
 let isCustomStyleApplied = false;
 
 function applyCustomMapSettings() {
@@ -47,6 +51,12 @@ function applyCustomMapSettings() {
                     // 2. 【ラベル制御】
                     const textStyle = style.getText();
                     if (textStyle) {
+                        // 💡 【ここが解決策】文字の設定に直接倍率（スケール）を掛け算する
+                        // これにより、フチ取りも含めて文字全体が指定の倍率にキュッと縮小されます
+                        if (typeof textStyle.setScale === 'function') {
+                            textStyle.setScale(LABEL_SCALE_RATIO);
+                        }
+
                         // 表示優先度を最高（無限大）にする
                         if (typeof textStyle.setPriority === 'function') {
                             textStyle.setPriority(Infinity); 
@@ -91,21 +101,16 @@ function applyCustomMapSettings() {
         }
     });
 
-    // 完全に適用完了したことを記録
     isCustomStyleApplied = true;
-    console.log("地図の完全描画を検知し、安全にカスタム設定を適用しました。");
+    console.log("文字の縮小倍率と強制出現を安全に適用しました。");
 }
 
-// 🛠️ 地図が「最初の描画（rendercomplete）」を終えた瞬間を狙い撃ちして実行する
-// これにより、フリーズの主因だったタイミングのズーム不一致を完全に防ぎます
+// 地図が「最初の描画（rendercomplete）」を終えた瞬間を狙い撃ちして実行する
 window.addEventListener('DOMContentLoaded', () => {
-    // 地図オブジェクトが生成されるのを数ミリ秒だけ待ってからイベントを登録
     setTimeout(() => {
         if (typeof map !== 'undefined' && typeof map.on === 'function') {
-            // 地図が完全に描き終わったら実行
             map.on('rendercomplete', applyCustomMapSettings);
         } else {
-            // 万が一の予備（地図がすでに描き終わっていた場合）
             setTimeout(applyCustomMapSettings, 1000);
         }
     }, 100);
