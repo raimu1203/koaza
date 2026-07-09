@@ -1,6 +1,6 @@
 window.addEventListener('DOMContentLoaded', () => {
     // 💡 設定：ラベルを強制出現させたい最低のズームレベル（これより拡大するとすべて表示）
-    const MIN_ZOOM_FOR_LABEL = 15; 
+    const MIN_ZOOM_FOR_LABEL = 14; 
 
     setTimeout(() => {
         if (typeof map === 'undefined') return;
