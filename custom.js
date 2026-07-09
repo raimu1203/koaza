@@ -1,15 +1,9 @@
 window.addEventListener('DOMContentLoaded', () => {
-    // 💡 設定：ラベルを表示させたい最低のズームレベル（これより拡大するとすべて表示）
-    const MIN_ZOOM_FOR_LABEL = 13; 
+    // 💡 設定：ラベルを強制出現させたい最低のズームレベル（これより拡大するとすべて表示）
+    const MIN_ZOOM_FOR_LABEL = 15; 
 
     setTimeout(() => {
         if (typeof map === 'undefined') return;
-
-        // 💡 【超重要】custom.js から地図全体の「自動間引き機能（declutter）」を強制的に OFF にする
-        // これにより、QGIS側の制限を無視して、重なる文字もすべて表示する準備が整います
-        if (map.declutter_) {
-            map.declutter_ = null; 
-        }
 
         // すべての自前レイヤーに対してスタイルを設定
         map.getLayers().forEach((layer) => {
@@ -50,7 +44,12 @@ window.addEventListener('DOMContentLoaded', () => {
                         // 2. 【ラベル制御】
                         const textStyle = style.getText();
                         if (textStyle) {
-                            // はみ出している文字も強制表示させる設定
+                            // 💡 決定打：このラベルの表示優先度を「無限大」にする
+                            // これにより、他のラベルと重なっても間引かれずに強制出現します
+                            if (typeof textStyle.setPriority === 'function') {
+                                textStyle.setPriority(Infinity); 
+                            }
+                            // はみ出す文字も許可
                             if (typeof textStyle.setOverflow === 'function') {
                                 textStyle.setOverflow(true);
                             }
@@ -90,6 +89,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        console.log("custom.js のみで自動間引きを解除し、強制出現モードを適用しました。");
+        console.log("安全な優先度ハックにより、カスタムファイルのみで強制出現モードを適用しました。");
     }, 600);
 });
