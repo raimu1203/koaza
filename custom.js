@@ -1,15 +1,13 @@
 window.addEventListener('DOMContentLoaded', () => {
     // 💡 設定1：ラベルを強制出現させたい最低のズームレベル
-    // 今後はズームレベルが「12」以上（12, 13, 14…）に拡大した瞬間に一斉出現します！
     const MIN_ZOOM_FOR_LABEL = 12; 
 
     // 💡 設定2：ラベルの文字の大きさ（少し小さめの10px）
-    const LABEL_FONT_SIZE = "5px sans-serif";
+    const LABEL_FONT_SIZE = "10px sans-serif";
 
     setTimeout(() => {
         if (typeof map === 'undefined') return;
 
-        // すべての自前レイヤーに対してスタイルを設定
         map.getLayers().forEach((layer) => {
             if (layer instanceof ol.layer.Tile) return;
 
@@ -48,9 +46,17 @@ window.addEventListener('DOMContentLoaded', () => {
                         // 2. 【ラベル制御】
                         const textStyle = style.getText();
                         if (textStyle) {
-                            // 文字の大きさを強制指定
+                            // 💡 文字の大きさを強制指定
                             if (typeof textStyle.setFont === 'function') {
                                 textStyle.setFont(LABEL_FONT_SIZE);
+                            }
+
+                            // 💡 【ここを追加】文字の周りの「フチ取り（ハロー）」も一緒に細くする
+                            // 文字を小さくしても、フチが太いままだと文字が潰れて大きさが変わって見えません
+                            const stroke = textStyle.getStroke();
+                            if (stroke && typeof stroke.setWidth === 'function') {
+                                // 1ピクセル〜1.5ピクセル程度の細さに強制的に絞ります
+                                stroke.setWidth(1.2); 
                             }
 
                             // 表示優先度を最高（無限大）にして強制出現
@@ -81,7 +87,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 拡大縮小の手が止まった瞬間に、地図を1回だけ描き直してラベルの状態を確定させる
         map.getView().on('moveend', () => {
             map.getLayers().forEach((layer) => {
                 if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
@@ -90,13 +95,12 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // 初回起動時にも一度だけ描き直してラベルの状態を正しくする
         map.getLayers().forEach((layer) => {
             if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
                 layer.changed();
             }
         });
 
-        console.log("ズーム境界を12に変更し、優先度ハックとサイズ変更を適用しました。");
+        console.log("文字サイズとフチ取りの太さを連動して縮小しました。");
     }, 600);
 });
