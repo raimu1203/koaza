@@ -2,7 +2,7 @@
 const MIN_ZOOM_FOR_LABEL = 12; 
 
 // 💡 設定2：文字の大きさの倍率（0.5）
-const LABEL_SCALE_RATIO = 0.5;
+const LABEL_SCALE_RATIO = 1.0;
 
 // 地図が完全に出来上がってから1回だけ安全に実行するためのフラグ
 let isCustomStyleApplied = false;
