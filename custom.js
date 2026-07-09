@@ -1,6 +1,6 @@
 window.addEventListener('DOMContentLoaded', () => {
     // 💡 設定：ラベルを表示させたい最低のズームレベル（これより拡大すると表示）
-    // QGISの地図の細かさに合わせて 「14」や「16」などに自由に調整してください
+    // 好みに応じて 14 や 16 などに書き換えてください
     const MIN_ZOOM_FOR_LABEL = 15; 
 
     setTimeout(() => {
@@ -21,12 +21,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (!styles) return styles;
 
                     const styleArray = Array.isArray(styles) ? styles : [styles];
-                    
-                    // 💡 現在の地図のズームレベルを取得する
                     const currentZoom = map.getView().getZoom();
 
                     styleArray.forEach((style) => {
-                        // 【既存の機能】塗りつぶし（Fill）だけを50%透明にする
+                        // 1. 【既存の機能】塗りつぶし（Fill）だけを50%透明にする
                         const fill = style.getFill();
                         if (fill) {
                             let color = fill.getColor();
@@ -43,31 +41,20 @@ window.addEventListener('DOMContentLoaded', () => {
                             }
                         }
 
-                        // 💡 【新しい機能】ズームレベルに応じてラベル（Text）を制御する
-                        const textStyle = style.getText();
-                        if (textStyle) {
-                            if (currentZoom >= MIN_ZOOM_FOR_LABEL) {
-                                // 設定したズームレベル以上（拡大）なら、文字色を「元の色」に戻して表示
-                                // （元の色が取得できない場合は安全のため黒 [#000000] にします）
-                                if (textStyle._originalFillColor) {
-                                    textStyle.getFill().setColor(textStyle._originalFillColor);
-                                }
-                                if (textStyle._originalStrokeColor && textStyle.getStroke()) {
-                                    textStyle.getStroke().setColor(textStyle._originalStrokeColor);
-                                }
-                            } else {
-                                // 設定したズームレベル未満（縮小）なら、文字と輪郭の色を「完全に透明」にして隠す
-                                // 隠す前に、元の色を記憶しておく（バックアップ）
-                                if (textStyle.getFill() && !textStyle._originalFillColor) {
-                                    textStyle._originalFillColor = textStyle.getFill().getColor();
-                                }
-                                if (textStyle.getStroke() && !textStyle._originalStrokeColor) {
-                                    textStyle._originalStrokeColor = textStyle.getStroke().getColor();
-                                }
+                        // 2. 【改善版】ズームレベルに応じてラベルの「オブジェクト自体」を切り替える
+                        // 初回実行時に、元のテキストデザインを安全な場所に隠して記憶（バックアップ）する
+                        if (style.getText() && !style._originalTextObject) {
+                            style._originalTextObject = style.getText();
+                        }
 
-                                // 完全に透明（RGBAの最後を0）にする
-                                if (textStyle.getFill()) textStyle.getFill().setColor([0, 0, 0, 0]);
-                                if (textStyle.getStroke()) textStyle.getStroke().setColor([0, 0, 0, 0]);
+                        // バックアップがある場合のみ処理
+                        if (style._originalTextObject) {
+                            if (currentZoom >= MIN_ZOOM_FOR_LABEL) {
+                                // 指定ズーム以上なら、記憶しておいた文字デザインをセットして「表示」
+                                style.setText(style._originalTextObject);
+                            } else {
+                                // 指定ズーム未満なら、テキストを空っぽ（null）にして完全に「非表示」
+                                style.setText(null);
                             }
                         }
                     });
@@ -77,9 +64,8 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 💡 画面を拡大縮小（ズーム変更）した時にも、リアルタイムに表示を切り替える設定
+        // ズームが変わったときに地図を再描画させて上記の設定をリアルタイムに反映する
         map.getView().on('change:resolution', () => {
-            // 地図を描き直させることで、上のsetStyleの中身を再実行させる
             map.getLayers().forEach((layer) => {
                 if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
                     layer.changed();
@@ -87,6 +73,6 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        console.log("塗りつぶし透明化と、ズーム連動ラベル制御を適応しました。");
+        console.log("安全な方法でズーム連動ラベル制御を適応しました。");
     }, 600);
 });
