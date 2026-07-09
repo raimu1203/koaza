@@ -1,7 +1,7 @@
 window.addEventListener('DOMContentLoaded', () => {
     // 💡 設定：ラベルを表示させたい最低のズームレベル（これより拡大すると表示）
     // 地図の初期表示に合わせて 14 や 16 などに調整してください
-    const MIN_ZOOM_FOR_LABEL = 15; 
+    const MIN_ZOOM_FOR_LABEL = 13; 
 
     setTimeout(() => {
         if (typeof map === 'undefined') return;
