@@ -1,7 +1,7 @@
 // 💡 設定1：ラベルを強制出現させたい最低のズームレベル（12）
 const MIN_ZOOM_FOR_LABEL = 12; 
 
-// 💡 設定2：文字の大きさの倍率（ご指定の「0.5」倍に設定しました！）
+// 💡 設定2：文字の大きさの倍率（0.5）
 const LABEL_SCALE_RATIO = 0.5;
 
 // 地図が完全に出来上がってから1回だけ安全に実行するためのフラグ
@@ -55,10 +55,23 @@ function applyCustomMapSettings() {
                             textStyle.setScale(LABEL_SCALE_RATIO);
                         }
 
-                        // 💡 【ここを追加】文字の配置を「中央揃え」に強制上書きする
-                        // これにより、右側に偏っていたラベルがポリゴンの重心の中心にバシッと揃います
+                        // 文字の配置を「中央揃え」にする
                         if (typeof textStyle.setTextAlign === 'function') {
                             textStyle.setTextAlign('center');
+                        }
+
+                        // 💡 【ここを追加】右寄りの原因である「ズレ（オフセット）」を完全に0にする
+                        // X方向（横）もY方向（縦）もズレをゼロにすることで、文字のど真ん中がポリゴンの中心に重なります
+                        if (typeof textStyle.setOffsetX === 'function') {
+                            textStyle.setOffsetX(0);
+                        }
+                        if (typeof textStyle.setOffsetY === 'function') {
+                            textStyle.setOffsetY(0);
+                        }
+                        
+                        // 💡 【念のため追加】縦方向の基準位置も「真ん中（middle）」に揃える
+                        if (typeof textStyle.setTextBaseline === 'function') {
+                            textStyle.setTextBaseline('middle');
                         }
 
                         // 表示優先度を最高（無限大）にする
@@ -89,7 +102,7 @@ function applyCustomMapSettings() {
         }
     });
 
-    // 拡大縮小の手が止まった瞬間に、地図を1回だけ描き直してラベルの状態を確定させる
+    // 拡大縮小の手が止まった瞬間に描き直す
     map.getView().on('moveend', () => {
         map.getLayers().forEach((layer) => {
             if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
@@ -98,7 +111,7 @@ function applyCustomMapSettings() {
         });
     });
 
-    // 初回起動時にも一度だけ描き直してラベルの状態を正しくする
+    // 初回起動時にも描き直す
     map.getLayers().forEach((layer) => {
         if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
             layer.changed();
@@ -106,10 +119,10 @@ function applyCustomMapSettings() {
     });
 
     isCustomStyleApplied = true;
-    console.log("文字サイズ0.5倍と中央揃えを安全に適用しました。");
+    console.log("配置のズレ（オフセット）をリセットし、完全中央揃えを適用しました。");
 }
 
-// 地図が「最初の描画（rendercomplete）」を終えた瞬間を狙い撃ちして実行する
+// 地図が「最初の描画」を終えた瞬間に実行
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         if (typeof map !== 'undefined' && typeof map.on === 'function') {
