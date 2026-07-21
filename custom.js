@@ -129,7 +129,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (typeof map !== 'undefined' && typeof map.on === 'function') {
             map.on('rendercomplete', applyCustomMapSettings);
         } else {
-            setTimeout(applyCustomMapSettings, 1000);
+            setTimeout(applyCustomMapSettings, 100);
         }
     }, 100);
 });
