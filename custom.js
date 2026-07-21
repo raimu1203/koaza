@@ -1,21 +1,21 @@
 // 💡 設定1：ラベルを強制出現させたい最低のズームレベル（12）
 const MIN_ZOOM_FOR_LABEL = 12; 
 
-// 💡 設定2：文字の大きさの倍率（好みのサイズに調整してください）
+// 💡 設定2：文字の大きさの倍率
 const LABEL_SCALE_RATIO = 0.8;
 
 // 💡 設定3：ヘッダーに表示するテキストの設定
-const HEADER_TITLE = "仙台市小字地図"; // 左側に表示するタイトル（大きく表示）
-const HEADER_TWITTER = "X(Twitter): @raimu_sendai"; // 右側に表示するアカウント表記
+const HEADER_TITLE = "仙台市小字地図"; 
+const HEADER_TWITTER = "X(Twitter): @raimu_sendai"; 
 
-// 地図が完全に出来上がってから1回だけ安全に実行するためのフラグ
+// 二重適用を防ぐフラグ
 let isCustomStyleApplied = false;
 
+// 🌟 地図のカスタムスタイルを即時適用する関数
 function applyCustomMapSettings() {
     if (isCustomStyleApplied) return;
     if (typeof map === 'undefined') return;
 
-    // すべての自前レイヤーに対してスタイルを設定
     map.getLayers().forEach((layer) => {
         if (layer instanceof ol.layer.Tile) return;
 
@@ -113,7 +113,7 @@ function applyCustomMapSettings() {
         });
     });
 
-    // 初回起動時にも描き直す
+    // 初回表示を確実に確定させる
     map.getLayers().forEach((layer) => {
         if (!(layer instanceof ol.layer.Tile) && typeof layer.changed === 'function') {
             layer.changed();
@@ -121,33 +121,31 @@ function applyCustomMapSettings() {
     });
 
     isCustomStyleApplied = true;
-    console.log("地図の各種カスタムとヘッダーの生成を完了しました。");
+    console.log("最速タイミングで地図カスタムを適用しました。");
 }
 
 // 🌟 上部ヘッダーを作成して画面に設置する関数
 function createTopHeader() {
     if (document.getElementById('custom-map-header')) return;
 
-    // ヘッダー要素の作成
     const header = document.createElement('div');
     header.id = 'custom-map-header';
 
-    // ヘッダーの装飾・スタイリング（半透明の白、最前面に固定表示など）
     header.style.position = 'fixed';
     header.style.top = '0';
     header.style.left = '0';
     header.style.width = '100%';
     header.style.height = '50px';
-    header.style.backgroundColor = 'rgba(255, 255, 255, 0.85)'; // 半透明の白（85%不透明度）
-    header.style.backdropFilter = 'blur(5px)'; // 背景にすりガラスのようなぼかし
-    header.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.15)'; // 下側に薄い影
-    header.style.zIndex = '9999'; // 地図の操作ボタン等より常に前面に表示
+    header.style.backgroundColor = 'rgba(255, 255, 255, 0.85)';
+    header.style.backdropFilter = 'blur(5px)';
+    header.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.15)';
+    header.style.zIndex = '9999';
     header.style.display = 'flex';
     header.style.justifyContent = 'space-between';
     header.style.alignItems = 'center';
     header.style.padding = '0 20px';
     header.style.boxSizing = 'border-box';
-    header.style.pointerEvents = 'auto'; // ヘッダー上のクリックなどを有効化
+    header.style.pointerEvents = 'auto';
     header.style.fontFamily = 'sans-serif';
 
     // 左側：仙台市小字地図（大・24px）
@@ -164,23 +162,13 @@ function createTopHeader() {
     rightText.style.fontWeight = 'bold';
     rightText.textContent = HEADER_TWITTER;
 
-    // ヘッダーにテキストを追加して画面の先頭に差し込み
     header.appendChild(leftText);
     header.appendChild(rightText);
     document.body.appendChild(header);
 }
 
-// 実行処理（画面読み込み時＆地図完成時）
+// ⚡ 読み込み完了と同時に無駄なタイマーなしで最速実行
 window.addEventListener('DOMContentLoaded', () => {
-    // ヘッダーを即座に作成して表示
     createTopHeader();
-
-    // 地図が「最初の描画」を終えた瞬間に地図スタイルを適用
-    setTimeout(() => {
-        if (typeof map !== 'undefined' && typeof map.on === 'function') {
-            map.on('rendercomplete', applyCustomMapSettings);
-        } else {
-            setTimeout(applyCustomMapSettings, 1000);
-        }
-    }, 100);
+    applyCustomMapSettings();
 });
