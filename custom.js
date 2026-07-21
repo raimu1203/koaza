@@ -5,8 +5,8 @@ const MIN_ZOOM_FOR_LABEL = 12;
 const LABEL_SCALE_RATIO = 0.8;
 
 // 💡 設定3：ヘッダーに表示するテキストの設定
-const HEADER_TITLE = "仙台市小字地図"; // 右側に大きく表示するタイトル
-const HEADER_TWITTER = "@アカウント名"; // 左側に小さく表示するTwitter(X)アカウント名（ご自身のに変更してください）
+const HEADER_TITLE = "仙台市小字地図"; // 左側に表示するタイトル（大きく表示）
+const HEADER_TWITTER = "X(Twitter): @raimu_sendai"; // 右側に表示するアカウント表記
 
 // 地図が完全に出来上がってから1回だけ安全に実行するためのフラグ
 let isCustomStyleApplied = false;
@@ -150,19 +150,19 @@ function createTopHeader() {
     header.style.pointerEvents = 'auto'; // ヘッダー上のクリックなどを有効化
     header.style.fontFamily = 'sans-serif';
 
-    // 左側：Twitterアカウント名（小）
+    // 左側：仙台市小字地図（大・24px）
     const leftText = document.createElement('div');
-    leftText.style.fontSize = '12px';
-    leftText.style.color = '#555555';
+    leftText.style.fontSize = '24px';
+    leftText.style.color = '#111111';
     leftText.style.fontWeight = 'bold';
-    leftText.textContent = HEADER_TWITTER;
+    leftText.textContent = HEADER_TITLE;
 
-    // 右側：仙台市小字地図（大）
+    // 右側：X(Twitter): @raimu_sendai
     const rightText = document.createElement('div');
-    rightText.style.fontSize = '20px';
-    rightText.style.color = '#111111';
+    rightText.style.fontSize = '13px';
+    rightText.style.color = '#444444';
     rightText.style.fontWeight = 'bold';
-    rightText.textContent = HEADER_TITLE;
+    rightText.textContent = HEADER_TWITTER;
 
     // ヘッダーにテキストを追加して画面の先頭に差し込み
     header.appendChild(leftText);
