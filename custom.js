@@ -34,19 +34,19 @@ function applyCustomMapSettings() {
                 const currentZoom = map.getView().getZoom();
 
                 styleArray.forEach((style) => {
-                    // 1. 【透明度】塗りつぶし（Fill）だけを50%透明にする処理
+                    // 1. 【透明度】塗りつぶし（Fill）をさらに薄い0.3（30%）に変更
                     const fill = style.getFill();
                     if (fill) {
                         let color = fill.getColor();
                         if (color && typeof color === 'string') {
                             if (typeof ol !== 'undefined' && ol.color && ol.color.asArray) {
                                 let rgba = ol.color.asArray(color).slice();
-                                rgba[3] = 0.5;
+                                rgba[3] = 0.3; // 💡 0.5から0.3に変更
                                 fill.setColor(rgba);
                             }
                         } else if (Array.isArray(color)) {
                             let newColor = [...color];
-                            newColor[3] = 0.5;
+                            newColor[3] = 0.3; // 💡 0.5から0.3に変更
                             fill.setColor(newColor);
                         }
                     }
@@ -121,7 +121,7 @@ function applyCustomMapSettings() {
     });
 
     isCustomStyleApplied = true;
-    console.log("最速タイミングで地図カスタムを適用しました。");
+    console.log("ポリゴン透明度0.3を適用しました。");
 }
 
 // 🌟 上部ヘッダーを作成して画面に設置する関数
